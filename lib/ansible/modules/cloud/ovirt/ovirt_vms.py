@@ -55,6 +55,9 @@ description:
     - "This module manages whole lifecycle of the Virtual Machine(VM) in oVirt. Since VM can hold many states in oVirt,
        this see notes to see how the states of the VM are handled."
 options:
+    storage_domain:
+        description:
+            - test
     name:
         description:
             - "Name of the the Virtual Machine to manage. If VM don't exists C(name) is required.
@@ -424,6 +427,14 @@ vm:
 
 class VmsModule(BaseModule):
 
+    # def __get_storage_domain(self):
+    #     sd = None
+    #
+    #     if self._module.params['storage_domain']:
+    #         storage_domains_service = self._connection.system_service().storage_domains_service()
+    #         sds = storage_domains_service.list(search='name=%s' % self._module.params['storage_domain'])
+
+
     def __get_template_with_version(self):
         """
         oVirt in version 4.1 doesn't support search by template+version_number,
@@ -446,6 +457,7 @@ class VmsModule(BaseModule):
 
     def build_entity(self):
         template = self.__get_template_with_version()
+
         return otypes.Vm(
             name=self._module.params['name'],
             cluster=otypes.Cluster(
@@ -488,6 +500,9 @@ class VmsModule(BaseModule):
             memory_policy=otypes.MemoryPolicy(
                 guaranteed=convert_to_bytes(self._module.params['memory_guaranteed']),
             ) if self._module.params['memory_guaranteed'] else None,
+            storage_domain=otypes.StorageDomain(
+                name=self._module.params['storage_domain']
+            )
         )
 
     def update_check(self, entity):
@@ -512,6 +527,7 @@ class VmsModule(BaseModule):
         if entity is None:
             if self._module.params.get('template') is None:
                 self._module.params['template'] = 'Blank'
+
 
     def post_update(self, entity):
         self.post_create(entity)
@@ -801,6 +817,7 @@ def main():
         kernel_path=dict(default=None),
         initrd_path=dict(default=None),
         kernel_params=dict(default=None),
+        storage_domain=dict(default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -808,6 +825,7 @@ def main():
     )
     check_sdk(module)
     check_params(module)
+
 
     try:
         state = module.params['state']
